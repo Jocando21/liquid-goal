@@ -1,5 +1,4 @@
-﻿````markdown
-# Liquid Goal
+﻿# Liquid Goal
 
 A lightweight vanilla JavaScript library for creating animated **liquid-style progress goals** with inertia, turbulence, bubbles, and parallax effects.  
 Perfect for stream widgets, dashboards, or gamified UIs.
@@ -131,5 +130,3 @@ goal.el.addEventListener("goalReached", () => console.log("🎉 Goal reached"));
 ## 🖥 Demo
 
 Check the <a href="https://jocando21.github.io/liquid-goal/" target="_blank">live demo on GitHub Pages</a>.
-
-```
