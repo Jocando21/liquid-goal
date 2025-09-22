@@ -33,9 +33,11 @@ export default class LiquidGoal {
       gradientAngle: 90,
       radius: 20,
       norm100: 1.2,
-      autoResize: true
+      autoResize: true,
+      background: { type: 'linear', from: '#150b10', to: '#0e0a0d', angle: 90, alpha: 1 }
     };
     this.opt = { ...def, ...options };
+    if (options.background) this.opt.background = { ...def.background, ...options.background };
     this.state = {
       level: this.opt.value,
       vel: 0,
@@ -52,11 +54,18 @@ export default class LiquidGoal {
     this._raf = requestAnimationFrame((ts) => this._loop(ts));
   }
 
-  setOptions(patch = {}) { Object.assign(this.opt, patch); }
+  setOptions(patch = {}) {
+    if (patch.background) this.opt.background = { ...this.opt.background, ...patch.background };
+    Object.assign(this.opt, patch);
+  }
+  setBackground(cfg = {}) { this.setOptions({ background: cfg }); }
   setGoal(n) { this.opt.goal = Math.max(0, Number(n) || 0); }
   setProgress(v) { this.opt.value = Math.max(0, Number(v) || 0); }
   updateProgress(d) { this.setProgress((this.opt.value || 0) + (Number(d) || 0)); }
-  getDisplayedPercent() { const capped = Math.min(this.state.level, this.opt.goal * this.opt.norm100); return Math.round((capped / (this.opt.goal * this.opt.norm100)) * 100);}
+  getDisplayedPercent() {
+    const capped = Math.min(this.state.level, this.opt.goal * this.opt.norm100);
+    return Math.round((capped / (this.opt.goal * this.opt.norm100)) * 100);
+  }
   play() { if (!this.state.running) { this.state.running = true; this._last = performance.now(); this._raf = requestAnimationFrame((ts) => this._loop(ts)); } }
   pause() { this.state.running = false; if (this._raf) cancelAnimationFrame(this._raf); }
   destroy() { this.pause(); window.removeEventListener('resize', this._onResize); }
@@ -112,6 +121,13 @@ export default class LiquidGoal {
     return '#'+(((r<<16)|(g<<8)|b)>>>0).toString(16).padStart(6,'0');
   }
 
+  _hexToRgba(hex, alpha=1){
+    const c = hex.replace('#','');
+    const n = parseInt(c.length===3 ? c.split('').map(x=>x+x).join('') : c, 16);
+    const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
   _drawLayer(levelY, amp, grad, alpha, nxOffset){
     const ctx=this.ctx, w=this.el.width, h=this.el.height, dpr=this.dpr, s=this.state, o=this.opt;
     const freqScale=1+(o.turbulence-1)*0.8;
@@ -137,14 +153,37 @@ export default class LiquidGoal {
     ctx.globalAlpha=1;
   }
 
+  _applyBackground(w,h){
+    const ctx=this.ctx, b=this.opt.background;
+    if (!b || b.type==='none') return;
+    if (b.type==='solid') {
+      ctx.save();
+      ctx.globalAlpha = b.alpha==null?1:b.alpha;
+      ctx.fillStyle = this._hexToRgba(b.color || '#000000', 1);
+      ctx.fillRect(0,0,w,h);
+      ctx.restore();
+      return;
+    }
+    if (b.type==='linear') {
+      const g = this._makeLinearGradient(w,h, b.angle==null?90:b.angle, b.from||'#150b10', b.to||'#0e0a0d');
+      ctx.save();
+      ctx.globalAlpha = b.alpha==null?1:b.alpha;
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+      ctx.restore();
+      return;
+    }
+    const g = this._makeLinearGradient(w,h,90,'#150b10','#0e0a0d');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  }
+
   _draw() {
     const ctx=this.ctx, w=this.el.width, h=this.el.height, dpr=this.dpr, s=this.state, o=this.opt;
     ctx.clearRect(0,0,w,h);
     this._clipRoundedRect(0,0,w,h,o.radius*dpr);
     ctx.save(); ctx.clip();
 
-    const bg=this._makeLinearGradient(w,h,90,'#150b10','#0e0a0d');
-    ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+    this._applyBackground(w,h);
 
     const pRaw = o.goal<=0 ? 0 : s.level/(o.goal*o.norm100);
     const p = Math.max(0, pRaw);
