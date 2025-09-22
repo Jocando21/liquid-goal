@@ -56,7 +56,7 @@ export default class LiquidGoal {
   setGoal(n) { this.opt.goal = Math.max(0, Number(n) || 0); }
   setProgress(v) { this.opt.value = Math.max(0, Number(v) || 0); }
   updateProgress(d) { this.setProgress((this.opt.value || 0) + (Number(d) || 0)); }
-  getDisplayedPercent() { return Math.round(Math.max(0, this.state.level / (this.opt.goal * this.opt.norm100)) * 100); }
+  getDisplayedPercent() { const capped = Math.min(this.state.level, this.opt.goal * this.opt.norm100); return Math.round((capped / (this.opt.goal * this.opt.norm100)) * 100);}
   play() { if (!this.state.running) { this.state.running = true; this._last = performance.now(); this._raf = requestAnimationFrame((ts) => this._loop(ts)); } }
   pause() { this.state.running = false; if (this._raf) cancelAnimationFrame(this._raf); }
   destroy() { this.pause(); window.removeEventListener('resize', this._onResize); }

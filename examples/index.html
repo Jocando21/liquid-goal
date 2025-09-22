@@ -1,12 +1,17 @@
+<!doctype html>
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Liquid Goal Demo</title>
+<title>Liquid Goal — dat.GUI Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
-  body{margin:0;display:grid;place-items:center;height:100vh;background:#08070a;color:#eee;font-family:system-ui,Arial}
+  :root{--bg:#08070a;--fg:#eee}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);font-family:system-ui,Segoe UI,Roboto,Arial;color:var(--fg)}
   #goalBox{width:360px;height:640px;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06)}
-  .ui{margin-top:16px;display:flex;gap:8px;justify-content:center}
+  .ui{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center}
   button{padding:10px 14px;border-radius:12px;border:1px solid #333;background:#1b0c12;color:#eee;cursor:pointer}
+  .pct{font-weight:800;letter-spacing:.3px}
 </style>
 </head>
 <body>
@@ -14,20 +19,146 @@
   <div class="ui">
     <button id="minus">-10</button>
     <button id="plus">+10</button>
+    <span class="pct" id="pct">0%</span>
   </div>
 
-<script type="module">
-import LiquidGoal from '../src/liquid-goal.js'; // adjust path if needed
+<!-- Carga clásica (no módulo) de dat.GUI = súper confiable -->
+<script src="https://cdn.jsdelivr.net/npm/dat.gui/build/dat.gui.min.js"></script>
 
-const goal = new LiquidGoal(document.getElementById('goalBox'), {
-  goal: 100, value: 0, turbulence: 1.0, wave: 1.0, lumps: 0.6,
-  xspeed: 30, parallax: 0.35, backLift: 10,
-  gradientFrom:'#7a0a10', gradientTo:'#3a0003', gradientAngle: 90,
-  radius: 22, norm100: 1.2
+<!-- App en ESM: importamos TU librería desde jsDelivr -->
+<script type="module">
+import LiquidGoal from 'https://cdn.jsdelivr.net/gh/Jocando21/liquid-goal@main/liquid-goal.js';
+
+const box = document.getElementById('goalBox');
+const goal = new LiquidGoal(box, {
+  goal: 100,
+  value: 0,
+  turbulence: 1.0,
+  wave: 1.0,
+  lumps: 0.6,
+  xspeed: 30,
+  parallax: 0.35,
+  backLift: 10,
+  gradientFrom: '#7a0a10',
+  gradientTo: '#3a0003',
+  gradientAngle: 90,
+  radius: 22,
+  norm100: 1.2
 });
 
-document.getElementById('plus').onclick = ()=> goal.updateProgress(10);
-document.getElementById('minus').onclick = ()=> goal.updateProgress(-10);
+const pctEl = document.getElementById('pct');
+const plus = document.getElementById('plus');
+const minus = document.getElementById('minus');
+
+plus.onclick = () => { goal.updateProgress(10); syncDisplay(); };
+minus.onclick = () => { goal.updateProgress(-10); syncDisplay(); };
+
+function syncDisplay(){
+  pctEl.textContent = goal.getDisplayedPercent() + '%';
+}
+setInterval(syncDisplay, 250);
+
+// ====== dat.GUI panel ======
+const gui = new window.dat.GUI({ width: 320 });
+
+// para que dat.GUI “vea” cambios, usamos un objeto params espejo
+const params = {
+  goal: goal.opt.goal,
+  value: goal.opt.value,
+  turbulence: goal.opt.turbulence,
+  wave: goal.opt.wave,
+  lumps: goal.opt.lumps,
+  xspeed: goal.opt.xspeed,
+  parallax: goal.opt.parallax,
+  backLift: goal.opt.backLift,
+  gradientFrom: goal.opt.gradientFrom,
+  gradientTo: goal.opt.gradientTo,
+  gradientAngle: goal.opt.gradientAngle,
+  radius: goal.opt.radius,
+  norm100: goal.opt.norm100
+};
+
+// Progress
+const fProg = gui.addFolder('Progress');
+const cGoal   = fProg.add(params, 'goal', 10, 2000, 10);
+const cValue  = fProg.add(params, 'value', 0, 2000, 1);
+cGoal.onChange(v => { goal.setGoal(v); });
+cValue.onChange(v => { goal.setProgress(v); });
+
+// Liquid
+const fLiquid = gui.addFolder('Liquid');
+const cTurb  = fLiquid.add(params, 'turbulence', 0.3, 2, 0.01);
+const cWave  = fLiquid.add(params, 'wave', 0.3, 2, 0.01);
+const cLump  = fLiquid.add(params, 'lumps', 0, 2, 0.01);
+const cXspd  = fLiquid.add(params, 'xspeed', -160, 160, 1);
+const cPar   = fLiquid.add(params, 'parallax', 0, 1, 0.01);
+const cLift  = fLiquid.add(params, 'backLift', 0, 40, 1);
+cTurb.onChange(v => goal.setOptions({ turbulence: v }));
+cWave.onChange(v => goal.setOptions({ wave: v }));
+cLump.onChange(v => goal.setOptions({ lumps: v }));
+cXspd.onChange(v => goal.setOptions({ xspeed: v }));
+cPar.onChange(v  => goal.setOptions({ parallax: v }));
+cLift.onChange(v => goal.setOptions({ backLift: v }));
+
+// Visual
+const fVisual = gui.addFolder('Visual');
+const cFrom  = fVisual.addColor(params, 'gradientFrom');
+const cTo    = fVisual.addColor(params, 'gradientTo');
+const cAng   = fVisual.add(params, 'gradientAngle', 0, 360, 1);
+const cRad   = fVisual.add(params, 'radius', 0, 60, 1);
+const cNorm  = fVisual.add(params, 'norm100', 1.0, 1.6, 0.01);
+cFrom.onChange(v => goal.setOptions({ gradientFrom: v }));
+cTo.onChange(v   => goal.setOptions({ gradientTo: v }));
+cAng.onChange(v  => goal.setOptions({ gradientAngle: v }));
+cRad.onChange(v  => goal.setOptions({ radius: v }));
+cNorm.onChange(v => goal.setOptions({ norm100: v }));
+
+// Export
+const fExport = gui.addFolder('Export');
+fExport.add({ export: ()=> {
+  const blob = new Blob([JSON.stringify(goal.opt, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'liquid-goal-settings.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}}, 'export');
+
+fExport.add({ copy: async ()=> {
+  await navigator.clipboard.writeText(JSON.stringify(goal.opt, null, 2));
+  alert('Settings copied!');
+}}, 'copy');
+
+// mantener el panel actualizado si cambias con botones +/- u otras acciones
+setInterval(() => {
+  // reflejamos el estado real en el espejo y refrescamos GUI
+  params.goal         = goal.opt.goal;
+  params.value        = goal.opt.value;
+  params.turbulence   = goal.opt.turbulence;
+  params.wave         = goal.opt.wave;
+  params.lumps        = goal.opt.lumps;
+  params.xspeed       = goal.opt.xspeed;
+  params.parallax     = goal.opt.parallax;
+  params.backLift     = goal.opt.backLift;
+  params.gradientFrom = goal.opt.gradientFrom;
+  params.gradientTo   = goal.opt.gradientTo;
+  params.gradientAngle= goal.opt.gradientAngle;
+  params.radius       = goal.opt.radius;
+  params.norm100      = goal.opt.norm100;
+
+  cGoal.updateDisplay();
+  cValue.updateDisplay();
+  cTurb.updateDisplay();
+  cWave.updateDisplay();
+  cLump.updateDisplay();
+  cXspd.updateDisplay();
+  cPar.updateDisplay();
+  cLift.updateDisplay();
+  cFrom.updateDisplay();
+  cTo.updateDisplay();
+  cAng.updateDisplay();
+  cRad.updateDisplay();
+  cNorm.updateDisplay();
+}, 300);
 </script>
 </body>
 </html>
