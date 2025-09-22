@@ -89,6 +89,7 @@ console.log(goal.getDisplayedPercent());
 
 ## 🖥 Demo
 
-Open the https://jocando21.github.io/liquid-goal/ file locally,  
-or check the live demo on **GitHub Pages** (if enabled in repo settings).
+Check the <a href="https://jocando21.github.io/liquid-goal/" target="_blank">live demo on GitHub Pages</a>.
+
+
 
