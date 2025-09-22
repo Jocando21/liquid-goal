@@ -1,0 +1,33 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Liquid Goal Demo</title>
+<style>
+  body{margin:0;display:grid;place-items:center;height:100vh;background:#08070a;color:#eee;font-family:system-ui,Arial}
+  #goalBox{width:360px;height:640px;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06)}
+  .ui{margin-top:16px;display:flex;gap:8px;justify-content:center}
+  button{padding:10px 14px;border-radius:12px;border:1px solid #333;background:#1b0c12;color:#eee;cursor:pointer}
+</style>
+</head>
+<body>
+  <div id="goalBox"></div>
+  <div class="ui">
+    <button id="minus">-10</button>
+    <button id="plus">+10</button>
+  </div>
+
+<script type="module">
+import LiquidGoal from '../src/liquid-goal.js'; // adjust path if needed
+
+const goal = new LiquidGoal(document.getElementById('goalBox'), {
+  goal: 100, value: 0, turbulence: 1.0, wave: 1.0, lumps: 0.6,
+  xspeed: 30, parallax: 0.35, backLift: 10,
+  gradientFrom:'#7a0a10', gradientTo:'#3a0003', gradientAngle: 90,
+  radius: 22, norm100: 1.2
+});
+
+document.getElementById('plus').onclick = ()=> goal.updateProgress(10);
+document.getElementById('minus').onclick = ()=> goal.updateProgress(-10);
+</script>
+</body>
+</html>
