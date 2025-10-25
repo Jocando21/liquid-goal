@@ -35,6 +35,8 @@ export default class LiquidGoal {
       backLift: 10,
       gradientFrom: "#7a0a10",
       gradientTo: "#3a0003",
+      backGradientFrom: "#4a0406",
+      backGradientTo: "#1e0001",
       gradientAngle: 90,
       radius: 20,
       norm100: 1.2,
@@ -188,7 +190,6 @@ export default class LiquidGoal {
   _emit(type, detail) {
     this.el.dispatchEvent(new CustomEvent(type, { detail }));
   }
-
   _fade(t) {
     return t * t * t * (t * (t * 6 - 15) + 10);
   }
@@ -238,7 +239,6 @@ export default class LiquidGoal {
     }
     return a;
   }
-
   _clipRoundedRect(x, y, w, h, r) {
     const ctx = this.ctx,
       rr = Math.min(r, w / 2, h / 2);
@@ -250,7 +250,6 @@ export default class LiquidGoal {
     ctx.arcTo(x, y, x + w, y, rr);
     ctx.closePath();
   }
-
   _makeLinearGradient(w, h, deg, c1, c2) {
     const ctx = this.ctx,
       rad = ((deg % 360) * Math.PI) / 180;
@@ -268,7 +267,6 @@ export default class LiquidGoal {
     g.addColorStop(1, c2);
     return g;
   }
-
   _shade(hex, amt) {
     const c = hex.replace("#", "");
     const n = parseInt(c, 16);
@@ -283,7 +281,6 @@ export default class LiquidGoal {
       "#" + (((r << 16) | (g << 8) | b) >>> 0).toString(16).padStart(6, "0")
     );
   }
-
   _hexToRgba(hex, alpha = 1) {
     const c = hex.replace("#", "");
     const n = parseInt(
@@ -300,7 +297,6 @@ export default class LiquidGoal {
       b = n & 255;
     return `rgba(${r},${g},${b},${alpha})`;
   }
-
   _applyBackground(w, h) {
     const ctx = this.ctx,
       b = this.opt.background;
@@ -329,7 +325,6 @@ export default class LiquidGoal {
       return;
     }
   }
-
   _spawnBubbles(dt, baseY) {
     if (!this.opt.bubbles.enabled) return;
     const w = this.el.width,
@@ -361,7 +356,6 @@ export default class LiquidGoal {
       if (b.y < baseY - b.r || b.y + b.r < 0) this._bubbles.splice(i, 1);
     }
   }
-
   _drawBubbles(baseY) {
     if (!this.opt.bubbles.enabled) return;
     const ctx = this.ctx;
@@ -375,11 +369,9 @@ export default class LiquidGoal {
       ctx.globalAlpha = 1;
     }
   }
-
   _rand(a, b) {
     return a + Math.random() * (b - a);
   }
-
   _drawLayer(levelY, amp, grad, alpha, nxOffset) {
     const ctx = this.ctx,
       w = this.el.width,
@@ -416,7 +408,6 @@ export default class LiquidGoal {
     ctx.fill();
     ctx.globalAlpha = 1;
   }
-
   _draw() {
     const ctx = this.ctx,
       w = this.el.width,
@@ -428,21 +419,18 @@ export default class LiquidGoal {
     this._clipRoundedRect(0, 0, w, h, o.radius * dpr);
     ctx.save();
     ctx.clip();
-
     this._applyBackground(w, h);
-
     const pRaw = o.goal <= 0 ? 0 : s.level / (o.goal * o.norm100);
     const p = Math.max(0, pRaw);
     const base = this._lerp(h * 0.96, h * 0.06, p);
     const vnorm = this._clamp(Math.abs(s.vel) / (o.goal || 1), 0, 1);
     const amp = h * (0.02 + vnorm * 0.12) * o.wave;
-
     const backGrad = this._makeLinearGradient(
       w,
       h,
       o.gradientAngle,
-      this._shade(o.gradientFrom, -0.25),
-      this._shade(o.gradientTo, -0.25)
+      o.backGradientFrom || this._shade(o.gradientFrom, -0.25),
+      o.backGradientTo || this._shade(o.gradientTo, -0.25)
     );
     const frontGrad = this._makeLinearGradient(
       w,
@@ -451,7 +439,6 @@ export default class LiquidGoal {
       o.gradientFrom,
       o.gradientTo
     );
-
     this._drawLayer(
       base - o.backLift * dpr,
       amp * 0.88,
@@ -460,17 +447,14 @@ export default class LiquidGoal {
       s.offBack
     );
     this._drawLayer(base, amp, frontGrad, 1.0, s.offFront);
-
     if (this.opt.bubbles.enabled) {
       ctx.save();
       ctx.globalCompositeOperation = "source-atop";
       this._drawBubbles(base);
       ctx.restore();
     }
-
     ctx.restore();
   }
-
   _step(dt) {
     const s = this.state,
       o = this.opt;
@@ -484,10 +468,8 @@ export default class LiquidGoal {
         percent: this.getDisplayedPercent(),
       });
     }
-
     const prevLevel = s.level;
     const prevPercent = this.getDisplayedPercent();
-
     const target = Math.max(0, o.value);
     const a = o.k * (target - s.level) - o.c * s.vel;
     s.vel += a * dt;
@@ -495,7 +477,6 @@ export default class LiquidGoal {
     s.t += dt;
     s.offFront += o.xspeed * this.dpr * dt;
     s.offBack += o.xspeed * this.dpr * dt * (1 - o.parallax);
-
     const w = this.el.width,
       h = this.el.height;
     const base = this._lerp(
@@ -504,7 +485,6 @@ export default class LiquidGoal {
       Math.max(0, s.level / (o.goal * o.norm100))
     );
     this._spawnBubbles(dt, base);
-
     if (Math.abs(s.level - prevLevel) > 0.001)
       this._emit("progress", {
         value: s.level,
@@ -514,7 +494,6 @@ export default class LiquidGoal {
     if (prevPercent < 100 && curPercent >= 100)
       this._emit("goalReached", { value: s.level, percent: curPercent });
   }
-
   _loop(now) {
     if (!this.state.running) return;
     const dt = Math.min(0.05, (now - this._last) / 1000);
